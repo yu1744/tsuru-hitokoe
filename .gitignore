@@ -1,0 +1,14 @@
+# ビルド成果物
+bin/
+obj/
+publish/
+dist/
+*.user
+.vs/
+.vscode/
+
+# いらすとやの素材とそこから作ったアイコンは再配布にあたるため含めない
+# (README.md の「ビルド方法」を参照)
+Assets/tsuru.png
+Assets/app.ico
+Assets/app.png
