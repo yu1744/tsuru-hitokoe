@@ -1,0 +1,8 @@
+# 改行コードは LF にそろえる(PC の core.autocrlf の設定に左右されないように)
+* text=auto eol=lf
+
+# バイナリ(念のため)
+*.png binary
+*.ico binary
+*.exe binary
+*.zip binary

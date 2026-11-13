@@ -1,0 +1,77 @@
+name: 不具合の報告
+description: うまく動かないところを教えてください
+title: "[不具合] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        報告ありがとうございます。わかる範囲で書いてください(全部埋めなくても大丈夫です)。
+
+  - type: textarea
+    id: what
+    attributes:
+      label: 何が起きましたか
+      description: 例:ツルをクリックしても吹き出しが出ない、一声帳で保存すると落ちる など
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: どうすると起きますか
+      description: 起きるまでにやったことを順番に書いてください
+      placeholder: |
+        1. 右クリック →「話す内容」→「最新ニュース」を選ぶ
+        2. ツルをクリックする
+        3. …
+    validations:
+      required: false
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 本当はどうなってほしかったですか
+    validations:
+      required: false
+
+  - type: dropdown
+    id: version
+    attributes:
+      label: ツルの一声のバージョン
+      description: 右クリック →「ツルの一声について」で確認できます
+      options:
+        - v1.1.0
+        - v1.0.0
+        - わからない
+    validations:
+      required: true
+
+  - type: dropdown
+    id: mode
+    attributes:
+      label: 「話す内容」の設定
+      options:
+        - 雑学
+        - 今日の出来事 (Wikipedia)
+        - 最新ニュース
+        - まぜる
+        - わからない / 関係なさそう
+    validations:
+      required: false
+
+  - type: input
+    id: windows
+    attributes:
+      label: Windows のバージョン
+      placeholder: 例:Windows 11
+    validations:
+      required: false
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: そのほか
+      description: スクリーンショットがあれば、ここに貼り付けてください
+    validations:
+      required: false

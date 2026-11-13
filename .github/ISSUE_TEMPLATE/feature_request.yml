@@ -1,0 +1,19 @@
+name: こうしてほしい(要望)
+description: あったらうれしい機能や、変えてほしいところを教えてください
+title: "[要望] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: どんな機能・変更がほしいですか
+      description: 例:吹き出しの文字を大きくしたい、ツルを2羽にしたい など
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: どんなときに困っていますか(あれば)
+    validations:
+      required: false

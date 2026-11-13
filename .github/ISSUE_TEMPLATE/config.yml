@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 最新版のダウンロード
+    url: https://github.com/yu1744/tsuru-hitokoe/releases/latest
+    about: アプリのダウンロードはこちらから
