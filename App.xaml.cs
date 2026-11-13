@@ -117,14 +117,14 @@ public partial class App : Application
         if (kind == "today")
         {
             await _today.EnsureLoadedAsync();
-            if (_today.Next() is string s) return new Utterance(s);
+            if (_today.Next() is string s) return new Utterance(s, Kind: "today");
         }
         else if (kind == "news")
         {
             await _news.EnsureFreshAsync();
             if (_news.Next() is Utterance u) return u;
         }
-        return new Utterance(_deck.Next().Text);
+        return new Utterance(_deck.Next().Text, Kind: "trivia");
     }
 
     static DateTime TopOfHour(DateTime t) => new(t.Year, t.Month, t.Day, t.Hour, 0, 0);
@@ -137,7 +137,7 @@ public partial class App : Application
         _lastChimeHour = hour;
         // スリープ明けなどで 0 分を過ぎていたら、古い時報は出さない
         if (now.Minute != 0 || !_settings.HourlyChime || !_crane.IsVisible) return;
-        SayRaw(ChimeText(now.Hour));
+        SayRaw(ChimeText(now.Hour), "chime");
         ResetAutoSpeak(); // 時報の直後に雑学が重ならないように
     }
 
@@ -163,9 +163,9 @@ public partial class App : Application
         if (_settings.Mode is "news" or "mix") _ = _news.EnsureFreshAsync();
     }
 
-    void SayRaw(string text)
+    void SayRaw(string text, string kind = "info")
     {
-        _current = new Utterance(text);
+        _current = new Utterance(text, Kind: kind);
         if (!_crane.IsVisible) _crane.Show();
         _crane.Hop();
         Present(_current);
@@ -173,7 +173,66 @@ public partial class App : Application
 
     void Present(Utterance u)
     {
-        _bubble.Present(u, _crane.Center, _crane.DiscRadius, WorkAreaOf(_crane), _settings.Scale);
+        _bubble.Present(u, DurationFor(u), _crane.Center, _crane.DiscRadius, WorkAreaOf(_crane), _settings.Scale);
+    }
+
+    // ───────────── 表示時間 ─────────────
+
+    /// <summary>表示時間を選べる種類 (設定のキー, メニューの表示名)</summary>
+    static readonly (string Kind, string Label)[] DisplayKinds =
+        { ("trivia", "雑学"), ("today", "今日の出来事"), ("news", "ニュース"), ("chime", "時報") };
+
+    /// <summary>0 = 文の長さに合わせる, -1 = 閉じるまで出しておく, それ以外は秒数</summary>
+    static readonly (string Label, int Seconds)[] DisplayOptions =
+        { ("文の長さに合わせる", 0), ("5 秒", 5), ("10 秒", 10), ("20 秒", 20), ("30 秒", 30), ("1 分", 60), ("閉じるまで出しておく", -1) };
+
+    static readonly (string Label, string Value, double Factor)[] SpeedOptions =
+        { ("ゆっくり", "slow", 1.6), ("ふつう", "normal", 1.0), ("はやい", "fast", 0.65) };
+
+    /// <summary>吹き出しを出しておく時間。null なら自動では閉じない。</summary>
+    TimeSpan? DurationFor(Utterance u)
+    {
+        int setting = _settings.DisplaySeconds.TryGetValue(u.Kind, out var s) ? s : 0;
+        if (setting < 0) return null;
+        if (setting > 0) return TimeSpan.FromSeconds(setting);
+
+        double factor = SpeedOptions.FirstOrDefault(o => o.Value == _settings.ReadingSpeed).Factor;
+        if (factor <= 0) factor = 1.0;
+        double secs = (5 + u.Text.Length * 0.13 + (u.Meta != null ? 2 : 0)) * factor;
+        return TimeSpan.FromSeconds(Math.Clamp(secs, 5, 45));
+    }
+
+    WinForms.ToolStripMenuItem BuildDisplayMenu()
+    {
+        var root = new WinForms.ToolStripMenuItem("表示時間");
+        foreach (var (kind, kindLabel) in DisplayKinds)
+        {
+            int current = _settings.DisplaySeconds.TryGetValue(kind, out var s) ? s : 0;
+            var current_label = DisplayOptions.FirstOrDefault(o => o.Seconds == current).Label ?? "文の長さに合わせる";
+            var sub = new WinForms.ToolStripMenuItem($"{kindLabel}({current_label})");
+            foreach (var (label, seconds) in DisplayOptions)
+            {
+                var item = new WinForms.ToolStripMenuItem(label) { Checked = current == seconds };
+                item.Click += (_, _) =>
+                {
+                    _settings.DisplaySeconds[kind] = seconds;
+                    _settings.Save();
+                };
+                sub.DropDownItems.Add(item);
+            }
+            root.DropDownItems.Add(sub);
+        }
+
+        root.DropDownItems.Add(new WinForms.ToolStripSeparator());
+        var speed = new WinForms.ToolStripMenuItem("読む速さ(「文の長さに合わせる」のとき)");
+        foreach (var (label, value, _) in SpeedOptions)
+        {
+            var item = new WinForms.ToolStripMenuItem(label) { Checked = _settings.ReadingSpeed == value };
+            item.Click += (_, _) => { _settings.ReadingSpeed = value; _settings.Save(); };
+            speed.DropDownItems.Add(item);
+        }
+        root.DropDownItems.Add(speed);
+        return root;
     }
 
     // ───────────── 位置 ─────────────
@@ -325,6 +384,7 @@ public partial class App : Application
             auto.DropDownItems.Add(item);
         }
         _menu.Items.Add(auto);
+        _menu.Items.Add(BuildDisplayMenu());
 
         var size = new WinForms.ToolStripMenuItem("ツルの大きさ");
         foreach (var (label, scale) in SizeOptions)

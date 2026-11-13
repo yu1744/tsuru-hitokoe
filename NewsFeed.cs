@@ -55,7 +55,7 @@ public sealed class NewsFeed
             item = _items[0];
         }
         _seen.Add(item.Title);
-        return new Utterance(item.Title, $"{item.Source}  {item.Published.ToLocalTime():M/d H:mm}", item.Link);
+        return new Utterance(item.Title, $"{item.Source}  {item.Published.ToLocalTime():M/d H:mm}", item.Link, "news");
     }
 
     async Task LoadAsync(string sources)

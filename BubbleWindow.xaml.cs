@@ -24,7 +24,11 @@ public partial class BubbleWindow : Window
 
         _autoHide.Tick += (_, _) => { _autoHide.Stop(); FadeOut(); };
         MouseEnter += (_, _) => _autoHide.Stop();
-        MouseLeave += (_, _) => RestartTimer(TimeSpan.FromSeconds(4));
+        // マウスを乗せている間は閉じない。離したら少し待って閉じる (設定が短ければその時間)
+        MouseLeave += (_, _) =>
+        {
+            if (_duration is TimeSpan d) RestartTimer(d < TimeSpan.FromSeconds(4) ? d : TimeSpan.FromSeconds(4));
+        };
         MoreButton.Click += (_, _) => OpenLink();
     }
 
@@ -53,8 +57,10 @@ public partial class BubbleWindow : Window
     /// ツルの位置に合わせて吹き出しを出す。
     /// craneCenter / radius / work はすべてスクリーン DIP 座標。
     /// </summary>
-    public void Present(Utterance u, Point craneCenter, double radius, Rect work, double scale)
+    /// <param name="duration">表示しておく時間。null なら自動では閉じない。</param>
+    public void Present(Utterance u, TimeSpan? duration, Point craneCenter, double radius, Rect work, double scale)
     {
+        _duration = duration;
         string text = u.Text;
         BodyText.Text = text;
         _link = u.SafeLink;
@@ -101,14 +107,15 @@ public partial class BubbleWindow : Window
         Slide.BeginAnimation(TranslateTransform.YProperty,
             new DoubleAnimation(above ? 8 : -8, 0, dur) { EasingFunction = ease });
 
-        // 文の長さに応じて読み終わるくらいの時間で自動で閉じる
-        var secs = Math.Clamp(5 + text.Length * 0.13, 8, 24);
-        RestartTimer(TimeSpan.FromSeconds(secs));
+        _autoHide.Stop();
+        if (_duration is TimeSpan d) RestartTimer(d);
     }
+
+    TimeSpan? _duration;
 
     void RestartTimer(TimeSpan span)
     {
-        if (!IsShowing) return;
+        if (!IsShowing || _duration == null) return; // 「閉じるまで出しておく」なら自動で閉じない
         _autoHide.Stop();
         _autoHide.Interval = span;
         _autoHide.Start();

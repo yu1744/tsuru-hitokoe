@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 
@@ -19,6 +20,15 @@ public sealed class Settings
     /// <summary>毎時 0 分に「〇時になりました」と知らせる</summary>
     public bool HourlyChime { get; set; } = true;
 
+    /// <summary>
+    /// 種類ごとの表示時間 (trivia / today / news / chime)。
+    /// 0 または未設定 = 文の長さに合わせる, -1 = 閉じるまで出しておく, それ以外は秒数。
+    /// </summary>
+    public Dictionary<string, int> DisplaySeconds { get; set; } = new();
+
+    /// <summary>「文の長さに合わせる」ときの読む速さ: slow / normal / fast</summary>
+    public string ReadingSpeed { get; set; } = "normal";
+
     /// <summary>ニュースの取得元: google / nhk / both</summary>
     public string NewsSources { get; set; } = "google";
 
@@ -34,7 +44,12 @@ public sealed class Settings
         try
         {
             if (File.Exists(FilePath))
-                return JsonSerializer.Deserialize<Settings>(File.ReadAllText(FilePath)) ?? new Settings();
+            {
+                var s = JsonSerializer.Deserialize<Settings>(File.ReadAllText(FilePath)) ?? new Settings();
+                s.DisplaySeconds ??= new(); // 古い設定ファイルや null 対策
+                s.ReadingSpeed ??= "normal";
+                return s;
+            }
         }
         catch { /* 壊れていたら既定値で起動 */ }
         return new Settings();
