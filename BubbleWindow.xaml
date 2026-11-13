@@ -27,9 +27,34 @@
                 <Border.Effect>
                     <DropShadowEffect BlurRadius="16" ShadowDepth="3" Direction="270" Opacity="0.28" Color="#3A2A1A" />
                 </Border.Effect>
-                <TextBlock x:Name="BodyText" TextWrapping="Wrap"
-                           Foreground="#2A2420" FontFamily="Yu Mincho" FontSize="15"
-                           LineHeight="26" LineStackingStrategy="BlockLineHeight" />
+                <StackPanel>
+                    <TextBlock x:Name="BodyText" TextWrapping="Wrap"
+                               Foreground="#2A2420" FontFamily="Yu Mincho" FontSize="15"
+                               LineHeight="26" LineStackingStrategy="BlockLineHeight" />
+
+                    <!-- ニュースのときだけ: 出典・時刻と「続きを読む」 -->
+                    <DockPanel x:Name="Footer" Margin="0,6,0,-3" Visibility="Collapsed" LastChildFill="True">
+                        <Button x:Name="MoreButton" DockPanel.Dock="Right" Margin="12,0,-6,0"
+                                Focusable="False" Cursor="Hand" ToolTip="記事をブラウザで開く">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Bd" Background="Transparent" CornerRadius="4" Padding="6,2">
+                                        <TextBlock x:Name="Label" Text="続きを読む ›" Foreground="#C8382A"
+                                                   FontFamily="Yu Gothic UI" FontSize="12" FontWeight="SemiBold" />
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Bd" Property="Background" Value="#F3E6D6" />
+                                            <Setter TargetName="Label" Property="TextDecorations" Value="Underline" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                        </Button>
+                        <TextBlock x:Name="MetaText" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                   Foreground="#9A8D7B" FontFamily="Yu Gothic UI" FontSize="11.5" />
+                    </DockPanel>
+                </StackPanel>
             </Border>
 
             <!-- しっぽ (ツルのいる側だけ表示) -->

@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
@@ -24,6 +25,20 @@ public partial class BubbleWindow : Window
         _autoHide.Tick += (_, _) => { _autoHide.Stop(); FadeOut(); };
         MouseEnter += (_, _) => _autoHide.Stop();
         MouseLeave += (_, _) => RestartTimer(TimeSpan.FromSeconds(4));
+        MoreButton.Click += (_, _) => OpenLink();
+    }
+
+    Uri? _link;
+
+    void OpenLink()
+    {
+        if (_link == null) return;
+        try
+        {
+            Process.Start(new ProcessStartInfo(_link.AbsoluteUri) { UseShellExecute = true });
+        }
+        catch { /* ブラウザが開けなくても何もしない */ }
+        FadeOut();
     }
 
     protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
@@ -38,9 +53,14 @@ public partial class BubbleWindow : Window
     /// ツルの位置に合わせて吹き出しを出す。
     /// craneCenter / radius / work はすべてスクリーン DIP 座標。
     /// </summary>
-    public void Present(string text, Point craneCenter, double radius, Rect work, double scale)
+    public void Present(Utterance u, Point craneCenter, double radius, Rect work, double scale)
     {
+        string text = u.Text;
         BodyText.Text = text;
+        _link = u.SafeLink;
+        MetaText.Text = u.Meta ?? "";
+        MoreButton.Visibility = _link != null ? Visibility.Visible : Visibility.Collapsed;
+        Footer.Visibility = (_link != null || !string.IsNullOrEmpty(u.Meta)) ? Visibility.Visible : Visibility.Collapsed;
         ContentScale.ScaleX = ContentScale.ScaleY = scale;
 
         bool wasShowing = IsShowing;

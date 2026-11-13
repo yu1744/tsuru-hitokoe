@@ -24,7 +24,7 @@ public sealed class NewsFeed
     static readonly TimeSpan RefreshEvery = TimeSpan.FromMinutes(20);
     static readonly TimeSpan MaxAge = TimeSpan.FromHours(24);
 
-    sealed record Item(string Title, string Source, DateTimeOffset Published);
+    sealed record Item(string Title, string Source, DateTimeOffset Published, string? Link);
 
     List<Item> _items = new();
     readonly HashSet<string> _seen = new();
@@ -44,7 +44,7 @@ public sealed class NewsFeed
     }
 
     /// <summary>次の見出し。取れていなければ null。</summary>
-    public string? Next()
+    public Utterance? Next()
     {
         if (_items.Count == 0) return null;
         var item = _items.FirstOrDefault(i => !_seen.Contains(i.Title));
@@ -55,7 +55,7 @@ public sealed class NewsFeed
             item = _items[0];
         }
         _seen.Add(item.Title);
-        return $"{item.Title}\n({item.Source} {item.Published.ToLocalTime():M/d H:mm})";
+        return new Utterance(item.Title, $"{item.Source}  {item.Published.ToLocalTime():M/d H:mm}", item.Link);
     }
 
     async Task LoadAsync(string sources)
@@ -110,7 +110,9 @@ public sealed class NewsFeed
                     if (source.Length == 0) source = "Google ニュース";
                 }
 
-                list.Add(new Item(title, source, ParseRfc822(it.Element("pubDate")?.Value)));
+                var link = it.Element("link")?.Value.Trim();
+                list.Add(new Item(title, source, ParseRfc822(it.Element("pubDate")?.Value),
+                                  string.IsNullOrEmpty(link) ? null : link));
             }
             return list;
         }

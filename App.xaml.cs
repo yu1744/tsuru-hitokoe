@@ -88,7 +88,7 @@ public partial class App : Application
 
     // ───────────── 話す ─────────────
 
-    string? _current;
+    Utterance? _current;
     bool _speaking;
 
     async void Speak(bool sameAgain = false)
@@ -108,7 +108,7 @@ public partial class App : Application
     }
 
     /// <summary>モードに応じて次に話す文を選ぶ。ネットから取れなければ雑学にする。</summary>
-    async Task<string> NextTextAsync()
+    async Task<Utterance> NextTextAsync()
     {
         string kind = _settings.Mode == "mix"
             ? new[] { "trivia", "today", "news" }[_rng.Next(3)]
@@ -117,14 +117,14 @@ public partial class App : Application
         if (kind == "today")
         {
             await _today.EnsureLoadedAsync();
-            if (_today.Next() is string s) return s;
+            if (_today.Next() is string s) return new Utterance(s);
         }
         else if (kind == "news")
         {
             await _news.EnsureFreshAsync();
-            if (_news.Next() is string s) return s;
+            if (_news.Next() is Utterance u) return u;
         }
-        return _deck.Next().Text;
+        return new Utterance(_deck.Next().Text);
     }
 
     static DateTime TopOfHour(DateTime t) => new(t.Year, t.Month, t.Day, t.Hour, 0, 0);
@@ -165,15 +165,15 @@ public partial class App : Application
 
     void SayRaw(string text)
     {
-        _current = text;
+        _current = new Utterance(text);
         if (!_crane.IsVisible) _crane.Show();
         _crane.Hop();
-        Present(text);
+        Present(_current);
     }
 
-    void Present(string text)
+    void Present(Utterance u)
     {
-        _bubble.Present(text, _crane.Center, _crane.DiscRadius, WorkAreaOf(_crane), _settings.Scale);
+        _bubble.Present(u, _crane.Center, _crane.DiscRadius, WorkAreaOf(_crane), _settings.Scale);
     }
 
     // ───────────── 位置 ─────────────
