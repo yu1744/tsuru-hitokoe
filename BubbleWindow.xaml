@@ -35,11 +35,12 @@
                     <!-- ニュースのときだけ: 出典・時刻と「続きを読む」 -->
                     <DockPanel x:Name="Footer" Margin="0,6,0,-3" Visibility="Collapsed" LastChildFill="True">
                         <Button x:Name="MoreButton" DockPanel.Dock="Right" Margin="12,0,-6,0"
-                                Focusable="False" Cursor="Hand" ToolTip="記事をブラウザで開く">
+                                Focusable="False" Cursor="Hand" ToolTip="ブラウザで開く" Content="続きを読む ›">
                             <Button.Template>
                                 <ControlTemplate TargetType="Button">
                                     <Border x:Name="Bd" Background="Transparent" CornerRadius="4" Padding="6,2">
-                                        <TextBlock x:Name="Label" Text="続きを読む ›" Foreground="#C8382A"
+                                        <TextBlock x:Name="Label" Foreground="#C8382A"
+                                                   Text="{Binding Content, RelativeSource={RelativeSource TemplatedParent}}"
                                                    FontFamily="Yu Gothic UI" FontSize="12" FontWeight="SemiBold" />
                                     </Border>
                                     <ControlTemplate.Triggers>

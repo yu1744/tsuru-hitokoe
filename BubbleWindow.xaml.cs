@@ -65,6 +65,7 @@ public partial class BubbleWindow : Window
         BodyText.Text = text;
         _link = u.SafeLink;
         MetaText.Text = u.Meta ?? "";
+        MoreButton.Content = u.LinkLabel;
         MoreButton.Visibility = _link != null ? Visibility.Visible : Visibility.Collapsed;
         Footer.Visibility = (_link != null || !string.IsNullOrEmpty(u.Meta)) ? Visibility.Visible : Visibility.Collapsed;
         ContentScale.ScaleX = ContentScale.ScaleY = scale;

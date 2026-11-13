@@ -5,9 +5,11 @@ namespace TsuruNoHitokoe;
 /// <summary>
 /// ツルが話す一言。
 /// Meta (出典・時刻など) や Link (続きを読む) はニュースのときだけ付く。
-/// Kind は表示時間の設定に使う: trivia / today / news / chime / info (お知らせ)
+/// Kind は表示時間の設定に使う: trivia / today / news / chime / info (お知らせ) / update (新しいバージョン)
+/// LinkLabel はリンクのボタンの文字 (既定は「続きを読む ›」)
 /// </summary>
-public sealed record Utterance(string Text, string? Meta = null, string? Link = null, string Kind = "info")
+public sealed record Utterance(string Text, string? Meta = null, string? Link = null, string Kind = "info",
+                               string LinkLabel = "続きを読む ›")
 {
     /// <summary>ブラウザで開いてよいリンク (http / https のみ)</summary>
     public Uri? SafeLink =>

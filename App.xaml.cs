@@ -77,6 +77,14 @@ public partial class App : Application
         _news.Sources = _settings.NewsSources;
         Prefetch();
 
+        // 起動して 1 分後に新しいバージョンを確認し、その後は 1 日 1 回
+        _updateTimer.Tick += (_, _) =>
+        {
+            _updateTimer.Interval = TimeSpan.FromHours(24);
+            if (_settings.CheckUpdates) CheckForUpdate(manual: false);
+        };
+        _updateTimer.Start();
+
         if (firstRun)
         {
             _settings.Save();
@@ -176,6 +184,70 @@ public partial class App : Application
         _bubble.Present(u, DurationFor(u), _crane.Center, _crane.DiscRadius, WorkAreaOf(_crane), _settings.Scale);
     }
 
+    // ───────────── アップデートの確認 ─────────────
+
+    readonly DispatcherTimer _updateTimer = new() { Interval = TimeSpan.FromMinutes(1) };
+    bool _checkingUpdate;
+
+    /// <summary>
+    /// GitHub の Releases に新しいバージョンがないか調べて、あればツルが知らせる。
+    /// manual = メニューから確認したとき (結果を必ず伝える)。自動のときは新しいものがあるときだけ、1 バージョンにつき 1 回。
+    /// </summary>
+    async void CheckForUpdate(bool manual)
+    {
+        if (_checkingUpdate) return;
+        _checkingUpdate = true;
+        try
+        {
+            var latest = await UpdateChecker.GetLatestAsync();
+            var current = UpdateChecker.Current;
+
+            if (latest == null)
+            {
+                if (manual) SayRaw("新しいバージョンを確認できませんでした。インターネットにつながっているか確かめてください。");
+                return;
+            }
+
+            if (latest.Version <= current)
+            {
+                if (manual) SayRaw($"最新のバージョン(v{current})を使っています。");
+                return;
+            }
+
+            if (!manual)
+            {
+                if (_settings.NotifiedVersion == latest.Tag) return; // このバージョンはもう知らせた
+                if (!_crane.IsVisible) return;                        // ツルを隠しているときは、また今度
+                if (_bubble.IsShowing)
+                {
+                    // 読んでいる途中の吹き出しを消さないよう、少し待ってからもう一度
+                    _updateTimer.Stop();
+                    _updateTimer.Interval = TimeSpan.FromMinutes(2);
+                    _updateTimer.Start();
+                    return;
+                }
+            }
+
+            _settings.NotifiedVersion = latest.Tag;
+            _settings.Save();
+
+            _current = new Utterance(
+                $"新しいバージョン(v{latest.Version})が出ています。今使っているのは v{current} です。\n" +
+                "ダウンロードして、今の TsuruNoHitokoe.exe と入れ替えてください。",
+                Meta: $"ツルの一声 {latest.Tag}",
+                Link: latest.PageUrl,
+                Kind: "update",
+                LinkLabel: "ダウンロードページへ ›");
+            if (!_crane.IsVisible) _crane.Show();
+            _crane.Hop();
+            Present(_current);
+        }
+        finally
+        {
+            _checkingUpdate = false;
+        }
+    }
+
     // ───────────── 表示時間 ─────────────
 
     /// <summary>表示時間を選べる種類 (設定のキー, メニューの表示名)</summary>
@@ -192,6 +264,7 @@ public partial class App : Application
     /// <summary>吹き出しを出しておく時間。null なら自動では閉じない。</summary>
     TimeSpan? DurationFor(Utterance u)
     {
+        if (u.Kind == "update") return null; // 新しいバージョンのお知らせは、閉じるまで出しておく
         int setting = _settings.DisplaySeconds.TryGetValue(u.Kind, out var s) ? s : 0;
         if (setting < 0) return null;
         if (setting > 0) return TimeSpan.FromSeconds(setting);
@@ -418,6 +491,15 @@ public partial class App : Application
             catch (Exception ex) { SayRaw("自動起動の設定を変更できませんでした。\n" + ex.Message); }
         };
         _menu.Items.Add(startup);
+
+        var update = new WinForms.ToolStripMenuItem("アップデート");
+        var checkNow = new WinForms.ToolStripMenuItem("新しいバージョンを確認する");
+        checkNow.Click += (_, _) => CheckForUpdate(manual: true);
+        var autoCheck = new WinForms.ToolStripMenuItem("新しいバージョンが出たら知らせる") { Checked = _settings.CheckUpdates };
+        autoCheck.Click += (_, _) => { _settings.CheckUpdates = !_settings.CheckUpdates; _settings.Save(); };
+        update.DropDownItems.Add(checkNow);
+        update.DropDownItems.Add(autoCheck);
+        _menu.Items.Add(update);
 
         var about = new WinForms.ToolStripMenuItem("ツルの一声について");
         about.Click += (_, _) => SayRaw(
