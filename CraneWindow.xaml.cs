@@ -28,6 +28,12 @@ public partial class CraneWindow : Window
         set { RootScale.ScaleX = value; RootScale.ScaleY = value; }
     }
 
+    static readonly ImageSource DefaultImage =
+        new System.Windows.Media.Imaging.BitmapImage(new Uri("pack://application:,,,/Assets/tsuru.png"));
+
+    /// <summary>表示する画像を変える。null なら元のツル (いらすとや) に戻す。</summary>
+    public void SetImage(ImageSource? image) => Tsuru.Source = image ?? DefaultImage;
+
     /// <summary>ツルの中心 (スクリーン DIP 座標)</summary>
     public Point Center => new(Left + ActualWidth / 2, Top + ActualHeight / 2);
 

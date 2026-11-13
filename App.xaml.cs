@@ -60,6 +60,7 @@ public partial class App : Application
         _deck = new TriviaDeck();
 
         _crane = new CraneWindow { Scale = _settings.Scale };
+        if (CustomImage.SavedFile is string img && CustomImage.Load(img) is { } custom) _crane.SetImage(custom);
         _crane.Clicked += (_, _) => Speak();
         _crane.RightClicked += (_, _) => ShowMenuAtCursor();
         _crane.Moved += (_, _) => { SavePosition(); if (_bubble.IsShowing) Speak(sameAgain: true); };
@@ -182,6 +183,36 @@ public partial class App : Application
     void Present(Utterance u)
     {
         _bubble.Present(u, DurationFor(u), _crane.Center, _crane.DiscRadius, WorkAreaOf(_crane), _settings.Scale);
+    }
+
+    // ───────────── ツルの画像 ─────────────
+
+    void PickImage()
+    {
+        var dlg = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "ツルの代わりに表示する画像を選んでください",
+            Filter = CustomImage.DialogFilter,
+            CheckFileExists = true,
+        };
+        if (dlg.ShowDialog() != true) return;
+
+        try
+        {
+            var img = CustomImage.Import(dlg.FileName, out var error);
+            if (img == null)
+            {
+                SayRaw(error ?? "この画像は使えませんでした。");
+                return;
+            }
+            if (!_crane.IsVisible) SetCraneVisible(true);
+            _crane.SetImage(img);
+            _crane.Hop();
+        }
+        catch (Exception ex)
+        {
+            SayRaw("画像を変えられませんでした。\n" + ex.Message);
+        }
     }
 
     // ───────────── アップデートの確認 ─────────────
@@ -471,6 +502,20 @@ public partial class App : Application
         var chime = new WinForms.ToolStripMenuItem("毎時の時報") { Checked = _settings.HourlyChime };
         chime.Click += (_, _) => { _settings.HourlyChime = !_settings.HourlyChime; _settings.Save(); };
         _menu.Items.Add(chime);
+
+        var image = new WinForms.ToolStripMenuItem("ツルの画像");
+        var pick = new WinForms.ToolStripMenuItem("画像を選ぶ…");
+        pick.Click += (_, _) => PickImage();
+        var reset = new WinForms.ToolStripMenuItem("元のツルに戻す") { Enabled = CustomImage.SavedFile != null };
+        reset.Click += (_, _) =>
+        {
+            try { CustomImage.Remove(); } catch { }
+            _crane.SetImage(null);
+            _crane.Hop();
+        };
+        image.DropDownItems.Add(pick);
+        image.DropDownItems.Add(reset);
+        _menu.Items.Add(image);
 
         var hide = new WinForms.ToolStripMenuItem(_settings.CraneVisible ? "ツルを隠す" : "ツルを呼び戻す");
         hide.Click += (_, _) => SetCraneVisible(!_settings.CraneVisible);
