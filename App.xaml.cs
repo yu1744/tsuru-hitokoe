@@ -93,6 +93,12 @@ public partial class App : Application
                 SayRaw("ツルの一声です。わたしをクリックすると、雑学をひとつお話しします。" +
                     "ドラッグで好きな場所へ、右クリックでメニューが開きます。"));
         }
+        else if (_deck.NewlyAdded > 0 && _crane.IsVisible)
+        {
+            int n = _deck.NewlyAdded;
+            Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, () =>
+                SayRaw($"アップデートで、一声帳に新しい雑学が {n} 個入りました。"));
+        }
     }
 
     // ───────────── 話す ─────────────
