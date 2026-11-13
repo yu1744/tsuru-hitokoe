@@ -5,8 +5,14 @@ Set-Location $PSScriptRoot
 [xml]$proj = Get-Content TsuruNoHitokoe.csproj -Encoding utf8
 $version = ($proj.Project.PropertyGroup | Where-Object { $_.Version } | Select-Object -First 1).Version
 
-$out = Join-Path $PSScriptRoot 'publish'
+# バージョンごとのフォルダに出力する (起動中の古い exe と場所がぶつからないように)
+$out = Join-Path $PSScriptRoot "publish\v$version"
 $dist = Join-Path $PSScriptRoot 'dist'
+$exe = Join-Path $out 'TsuruNoHitokoe.exe'
+if (Test-Path $exe) {
+    try { [IO.File]::Open($exe, 'Open', 'ReadWrite', 'None').Dispose() }
+    catch { throw "$exe が使用中です。このバージョンのツルの一声を終了してから、もう一度実行してください。" }
+}
 Remove-Item $out -Recurse -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force $dist | Out-Null
 
