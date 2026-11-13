@@ -15,7 +15,7 @@
     <Product>ツルの一声</Product>
     <AssemblyTitle>ツルの一声</AssemblyTitle>
     <Description>画面のツルをクリックすると雑学をひとつ教えてくれる常駐アプリ</Description>
-    <Version>1.2.0</Version>
+    <Version>1.2.1</Version>
     <Copyright>© 2026</Copyright>
   </PropertyGroup>
 
