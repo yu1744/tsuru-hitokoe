@@ -35,6 +35,9 @@ public sealed class Settings
     /// <summary>お知らせ済みのバージョン (同じバージョンを何度も知らせないため)</summary>
     public string? NotifiedVersion { get; set; }
 
+    /// <summary>使う一声帳の名前 (null = いつもの一声帳)</summary>
+    public string? ActiveBook { get; set; }
+
     /// <summary>ニュースの取得元: google / nhk / both</summary>
     public string NewsSources { get; set; } = "google";
 

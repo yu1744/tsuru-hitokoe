@@ -57,7 +57,13 @@ public partial class App : Application
 
         bool firstRun = !Settings.Exists;
         _settings = Settings.Load();
-        _deck = new TriviaDeck();
+        _deck = new TriviaDeck(_settings.ActiveBook);
+        if (_settings.ActiveBook != _deck.Book) { _settings.ActiveBook = _deck.Book; _settings.Save(); } // 消えた一声帳だった
+        _deck.Switched += () =>
+        {
+            _settings.ActiveBook = _deck.Book;
+            _settings.Save();
+        };
 
         _crane = new CraneWindow { Scale = _settings.Scale };
         if (CustomImage.SavedFile is string img && CustomImage.Load(img) is { } custom) _crane.SetImage(custom);
@@ -533,6 +539,19 @@ public partial class App : Application
         custom.Click += (_, _) => OpenEditor();
         _menu.Items.Add(custom);
 
+        var books = new WinForms.ToolStripMenuItem($"一声帳を切り替える({_deck.BookName})");
+        foreach (var name in new[] { (string?)null }.Concat(TriviaDeck.ExtraBooks()))
+        {
+            var item = new WinForms.ToolStripMenuItem(name ?? TriviaDeck.MainBookName) { Checked = _deck.Book == name };
+            item.Click += (_, _) => SwitchBook(name);
+            books.DropDownItems.Add(item);
+        }
+        books.DropDownItems.Add(new WinForms.ToolStripSeparator());
+        var manage = new WinForms.ToolStripMenuItem("一声帳を作る・名前を変える・消す…");
+        manage.Click += (_, _) => OpenEditor();
+        books.DropDownItems.Add(manage);
+        _menu.Items.Add(books);
+
         bool startupOn = false;
         try { startupOn = AutoStart.IsEnabled; } catch { }
         var startup = new WinForms.ToolStripMenuItem("Windows 起動時に呼ぶ") { Checked = startupOn };
@@ -582,6 +601,23 @@ public partial class App : Application
         _editor.Closed += (_, _) => _editor = null;
         _editor.Show();
         _editor.Activate();
+    }
+
+    void SwitchBook(string? book)
+    {
+        if (book == _deck.Book) return;
+        if (_editor != null)
+        {
+            // 一声帳の画面に未保存の変更があれば、そちらで確かめてから切り替える
+            OpenEditor();
+            if (!_editor.RequestSwitch(book)) return;
+        }
+        else
+        {
+            try { _deck.SwitchTo(book); }
+            catch (Exception ex) { SayRaw("一声帳を切り替えられませんでした。\n" + ex.Message); return; }
+        }
+        SayRaw($"一声帳を「{_deck.BookName}」に切り替えました。({_deck.Count} 個)");
     }
 
     void ExitApp()
